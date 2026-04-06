@@ -1,5 +1,6 @@
 # 🐾 Pug Runner - Çok Katlı Platform Oyunu
 
+https://mehmetdoqan.github.io/pug_runner/
 ## Proje Hakkında
 
 Pug Runner, 5 katlı bir platformda geçen eğlenceli ve zorlu bir bulmaca oyunudur. Oyuncu, sevimli köpeği (Pug) kontrol ederek kemikleri toplamalı ve bölümü tamamlamalıdır. Oyun, kolay, orta ve zor olmak üzere 3 zorluk seviyesine sahiptir ve toplamda 60 bölüm içerir.
