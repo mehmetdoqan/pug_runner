@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>🐾 Pug Runner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a1a2e;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:12px;font-family:'Segoe UI',sans-serif}
+.phone{width:360px;background:#0f0f23;border-radius:32px;border:6px solid #333;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);position:relative}
+.scr{width:100%;display:none;flex-direction:column}
+.scr.on{display:flex}
+
+/* MAP */
+.map-hdr{padding:14px 18px 10px;background:linear-gradient(180deg,#1a1a3e,#0f0f23);display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #333}
+.diff-tabs{display:flex;margin:8px 10px;border-radius:10px;overflow:hidden;border:2px solid #333}
+.dtab{flex:1;padding:8px 4px;border:none;font-weight:700;font-size:12px;cursor:pointer;background:#1a1a2e;color:#666;transition:all .2s}
+.dtab.act{color:#fff}
+.dtab.easy.act{background:#22c55e}.dtab.med.act{background:#f59e0b}.dtab.hard.act{background:#ef4444}
+.lvl-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:10px 12px 20px;overflow-y:auto;max-height:480px;background:#0f0f23}
+.lc{height:52px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:#1a1a2e;color:#444;cursor:not-allowed;position:relative;border:2px solid #222}
+.lc.open{background:#1a1a3e;border-color:#4a4a8a;color:#aaa;cursor:pointer}
+.lc.open:hover{border-color:#7c7cff;color:#fff}
+.lc.done{background:#0d2d1a;border-color:#22c55e;color:#22c55e}
+.lc.done::after{content:'⭐';position:absolute;bottom:2px;font-size:9px}
+
+/* PLAY */
+.play-hdr{padding:8px 14px;display:flex;justify-content:space-between;align-items:center;background:#0a0a1a;border-bottom:2px solid #222}
+.play-hdr button{border:none;background:none;font-size:20px;cursor:pointer;padding:4px}
+#lvlLabel{font-size:13px;font-weight:700;color:#aaa}
+#boneCount{font-size:13px;font-weight:700;color:#fbbf24}
+.canvas-wrap{background:#0a0a1a;display:flex;justify-content:center;padding:6px 4px}
+canvas{border:3px solid #333;border-radius:8px;display:block}
+
+/* CODE */
+.code-sec{padding:6px 10px 8px;background:#0f0f23;border-top:2px solid #222}
+.cnt-badge{font-size:11px;color:#555;text-align:right;margin-bottom:3px}
+.drop-frame{min-height:46px;max-height:68px;background:#0a0a1a;border:2px dashed #333;border-radius:10px;display:flex;flex-wrap:wrap;gap:4px;padding:5px;margin-bottom:7px;overflow-y:auto}
+.chip{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;user-select:none;flex-shrink:0;border-bottom:3px solid rgba(0,0,0,.4);color:white;transition:transform .15s,opacity .15s}
+.chip:hover{transform:scale(.75);opacity:.5}
+.chip.act{transform:scale(1.3);border:2px solid #FFD700;box-shadow:0 0 0 2px rgba(255,215,0,.4);z-index:10}
+.chip.done{opacity:.3;transform:scale(.8)}
+.cL{background:#f97316}.cR{background:#3b82f6}.cU{background:#8b5cf6}.cD{background:#10b981}.cJ{background:#ec4899}
+.cmd-row{display:flex;gap:5px;justify-content:center;margin-bottom:7px}
+.cbtn{width:52px;height:52px;border:none;border-radius:12px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;transition:transform .1s;flex-direction:column;gap:1px}
+.cbtn span{font-size:9px;font-weight:700}
+.cbtn:active{transform:translateY(3px)}
+.bL{background:#f97316;box-shadow:0 5px 0 #9a3412}
+.bR{background:#3b82f6;box-shadow:0 5px 0 #1e3a8a}
+.bU{background:#8b5cf6;box-shadow:0 5px 0 #4c1d95}
+.bD{background:#10b981;box-shadow:0 5px 0 #064e3b}
+.bJ{background:#ec4899;box-shadow:0 5px 0 #831843}
+.go-btn{width:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);color:white;border:none;padding:11px;border-radius:20px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 5px 0 #3730a3;transition:transform .1s,box-shadow .1s}
+.go-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #3730a3}
+
+/* MODAL */
+.modal-ov{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.modal-ov.show{display:flex}
+.modal-card{background:#1a1a2e;border:2px solid #333;padding:24px 20px;border-radius:24px;text-align:center;width:100%;animation:popIn .4s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes popIn{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.mbtn{width:100%;border:none;padding:12px;border-radius:18px;font-weight:700;font-size:14px;cursor:pointer;margin-top:8px}
+.bg{background:#22c55e;color:white;box-shadow:0 4px 0 #15803d}
+.bo{background:#f97316;color:white;box-shadow:0 4px 0 #9a3412}
+
+/* EDITOR */
+.edit-tray{position:absolute;bottom:0;left:0;right:0;background:#1a1a2e;border-top:3px solid #6366f1;padding:10px 12px;transform:translateY(100%);transition:transform .3s;z-index:200;border-radius:16px 16px 0 0;max-height:75%;overflow-y:auto}
+.edit-tray.open{transform:translateY(0)}
+.tool-row{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap}
+.tool-btn{width:40px;height:40px;border:2px solid #333;border-radius:9px;background:#0f0f23;font-size:18px;cursor:pointer;color:white;transition:all .15s}
+.tool-btn.sel{border-color:#6366f1;background:#1e1e4e}
+.save-btn{width:100%;background:#6366f1;color:white;border:none;padding:10px;border-radius:10px;font-weight:700;cursor:pointer;margin-top:6px}
+.lad-target{display:none;background:#1e1e0e;border:2px solid #f59e0b;border-radius:8px;padding:6px 8px;margin-bottom:8px;font-size:11px;font-weight:700;color:#fbbf24;text-align:center}
+.lad-target.show{display:block}
+.lad-btns{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.lad-btn{flex:1;padding:5px;border:2px solid #555;border-radius:6px;background:#0f0f23;font-size:11px;font-weight:700;cursor:pointer;color:#aaa;min-width:40px}
+.lad-btn.sel{background:#2d2d00;border-color:#f59e0b;color:#fbbf24}
+
+/* PW */
+.pw-ov{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);z-index:600;display:none;align-items:center;justify-content:center}
+.pw-ov.show{display:flex}
+.pw-card{background:#1a1a2e;border:2px solid #333;padding:22px 18px;border-radius:20px;text-align:center;width:230px}
+.pw-input{width:100%;padding:9px 12px;border:2px solid #333;border-radius:9px;font-size:17px;text-align:center;letter-spacing:4px;outline:none;margin-bottom:7px;background:#0f0f23;color:white}
+.pw-input:focus{border-color:#6366f1}
+.pw-err{color:#ef4444;font-size:11px;font-weight:700;margin-bottom:7px;display:none}
+.pw-btns{display:flex;gap:7px}
+.pw-ok{flex:1;background:#6366f1;color:white;border:none;padding:9px;border-radius:9px;font-weight:700;cursor:pointer}
+.pw-cancel{flex:1;background:#222;color:#aaa;border:none;padding:9px;border-radius:9px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- MAP -->
+<div id="sMap" class="scr on">
+  <div class="map-hdr">
+    <span style="font-size:17px;font-weight:700;color:#a5b4fc">🐾 Pug Runner</span>
+    <span id="scoreDisp" style="font-weight:700;color:#fbbf24">🦴 0</span>
+  </div>
+  <div class="diff-tabs">
+    <button class="dtab easy act" id="tabEasy" onclick="switchDiff('easy')">😊 Kolay</button>
+    <button class="dtab med" id="tabMed" onclick="switchDiff('med')">😤 Orta</button>
+    <button class="dtab hard" id="tabHard" onclick="switchDiff('hard')">💀 Zor</button>
+  </div>
+  <div class="lvl-grid" id="lvlGrid"></div>
+</div>
+
+<!-- PLAY -->
+<div id="sPlay" class="scr">
+  <div class="play-hdr">
+    <button onclick="goMap()">🏠</button>
+    <b id="lvlLabel">Bölüm 1</b>
+    <span id="boneCount">🦴 0/0</span>
+    <button onclick="toggleEdit()">⚙️</button>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="gc" width="344" height="300"></canvas>
+  </div>
+  <div class="code-sec">
+    <div class="cnt-badge"><span id="cntBadge">0</span>/20 — tıkla=sil</div>
+    <div class="drop-frame" id="dropZone"></div>
+    <div class="cmd-row">
+      <button class="cbtn bL" onclick="addCmd('L')">⬅️<span>Sol</span></button>
+      <button class="cbtn bR" onclick="addCmd('R')">➡️<span>Sağ</span></button>
+      <button class="cbtn bU" onclick="addCmd('U')">⬆️<span>Çık</span></button>
+      <button class="cbtn bD" onclick="addCmd('D')">⬇️<span>İn</span></button>
+      <button class="cbtn bJ" onclick="addCmd('J')">🦘<span>Zıpla</span></button>
+    </div>
+    <button class="go-btn" onclick="runCode()">▶ BAŞLAT</button>
+  </div>
+
+  <div id="winModal" class="modal-ov">
+    <div class="modal-card">
+      <div style="font-size:44px">🎉</div>
+      <h2 style="color:#22c55e;margin:8px 0 4px">AFERİN!</h2>
+      <p style="color:#888;font-size:12px">Tüm kemikler toplandı!</p>
+      <div style="font-size:26px;color:#FFD700;margin:8px 0" id="winStars">⭐⭐⭐</div>
+      <button class="mbtn bg" onclick="goNext()">BİR SONRAKİ ➔</button>
+      <button class="mbtn bo" onclick="retryLvl()">🔄 TEKRAR</button>
+    </div>
+  </div>
+  <div id="failModal" class="modal-ov">
+    <div class="modal-card">
+      <div style="font-size:44px">🔄</div>
+      <h2 id="failTitle" style="color:#f97316;margin:8px 0 4px">OLMADI!</h2>
+      <p id="failMsg" style="color:#888;font-size:12px;margin-bottom:4px">Tekrar dene!</p>
+      <button class="mbtn bo" onclick="retryLvl()">🔄 TEKRAR DENE</button>
+    </div>
+  </div>
+
+  <!-- EDITOR -->
+  <div class="edit-tray" id="editTray">
+    <div style="text-align:center;font-weight:700;margin-bottom:8px;color:#a5b4fc;font-size:13px">🛠️ HARİTAYI DÜZENLE</div>
+    <div style="font-size:10px;font-weight:700;color:#555;margin-bottom:4px">🔧 ARAÇ:</div>
+    <div class="tool-row">
+      <button class="tool-btn sel" id="tP" onclick="selTool('P')" title="Başlangıç">🐾</button>
+      <button class="tool-btn" id="tB" onclick="selTool('B')" title="Kemik">🦴</button>
+      <button class="tool-btn" id="tW" onclick="selTool('W')" title="Duvar">🧱</button>
+      <button class="tool-btn" id="tS" onclick="selTool('S')" title="Diken">🌵</button>
+      <button class="tool-btn" id="tL" onclick="selTool('L')" title="Merdiven">🪜</button>
+      <button class="tool-btn" id="tX" onclick="selTool('X')" title="Sil">❌</button>
+    </div>
+    <div class="lad-target" id="ladTarget">
+      <div>🪜 Merdiven hangi kata çıksın?</div>
+      <div class="lad-btns" id="ladBtns"></div>
+    </div>
+    <button class="save-btn" onclick="toggleEdit()">✅ KAYDET VE KAPAT</button>
+  </div>
+
+  <div id="pwOv" class="pw-ov">
+    <div class="pw-card">
+      <div style="font-size:26px;margin-bottom:5px">🔐</div>
+      <h3 style="color:#a5b4fc;margin-bottom:5px;font-size:14px">Editör Şifresi</h3>
+      <p style="color:#555;font-size:11px;margin-bottom:10px">Yalnızca öğretmenler için</p>
+      <input id="pwInput" class="pw-input" type="password" placeholder="••••" onkeydown="if(event.key==='Enter')checkPw()">
+      <div id="pwErr" class="pw-err">❌ Yanlış şifre!</div>
+      <div class="pw-btns">
+        <button class="pw-cancel" onclick="closePw()">İptal</button>
+        <button class="pw-ok" onclick="checkPw()">Giriş ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ─── SABİTLER ───
+var COLS = 8;       // yatay hücre sayısı
+var FLOORS = 5;     // sabit 5 kat (0=en alt, 4=en üst)
+var CW = 43;        // hücre genişliği px
+var FLOOR_H = 60;   // her katın yüksekliği px
+var PLAT_H = 8;     // platform kalınlığı px
+var CANVAS_W = 344;
+var CANVAS_H = FLOORS * FLOOR_H; // 300px
+
+// Kat renkleri (0=en alt → 4=en üst)
+var FLOOR_COLORS = [
+  { bg:'#1a0800', plat:'#8B4513', shine:'#CD853F' },  // Kat 0: toprak
+  { bg:'#001a08', plat:'#2d6a2d', shine:'#5aaa5a' },  // Kat 1: çimen
+  { bg:'#00081a', plat:'#1a3a6a', shine:'#4a7aba' },  // Kat 2: taş
+  { bg:'#0d001a', plat:'#5a1a8a', shine:'#9a5aca' },  // Kat 3: mor
+  { bg:'#1a1a00', plat:'#7a6a00', shine:'#c8a800' },  // Kat 4: altın
+];
+
+// ─── OYUN DURUMU ───
+var G = {
+  unlocked: {easy:1, med:1, hard:1},
+  done: {easy:[], med:[], hard:[]},
+  curDiff: 'easy', cur: 0,
+  tool: 'P', running: false,
+  pos: {c:0, fl:0},
+  facing: 1,
+  cmds: [],
+  editorUnlocked: false,
+  curLvl: null,
+  ladTo: 1,
+  animPug: {x:0, y:0, tx:0, ty:0, prog:1, jumping:false, shaking:false, shakeTick:0}
+};
+
+// ─── BÖLÜM YAPISI ───
+// Her bölüm: { start:{c,fl}, bones:[{c,fl}], walls:[{c,fl}], spikes:[{c,fl}], ladders:[{c,fl,to}] }
+// Kolay bölümlerde: start.fl === bone.fl (aynı katta)
+// Merdiven her bölümde olmak zorunda değil
+
+function mkL(sc, sfl, bones, walls, spikes, ladders) {
+  return {
+    start: {c:sc, fl:sfl},
+    bones: bones.map(function(b){ return {c:b[0], fl:b[1], eaten:false}; }),
+    walls: walls.map(function(w){ return {c:w[0], fl:w[1]}; }),
+    spikes: spikes.map(function(s){ return {c:s[0], fl:s[1]}; }),
+    ladders: ladders.map(function(l){ return {c:l[0], fl:l[1], to:l[2]}; })
+  };
+}
+
+// ─── KOLAY BÖLÜMLER (20 adet) ───
+// İlk 10: aynı katta, sadece yatay hareket
+// 11-20: merdiven var ama basit
+var EASY = [
+  // 1-5: Kat 0'da, sadece sağa git
+  mkL(0,0, [[4,0]],  [], [], []),
+  mkL(0,0, [[7,0]],  [], [], []),
+  mkL(7,0, [[0,0]],  [], [], []),
+  mkL(0,0, [[3,0],[6,0]], [], [], []),
+  mkL(1,0, [[5,0],[7,0]], [], [], []),
+  // 6-10: Farklı katlarda başla, aynı katta mama
+  mkL(0,1, [[6,1]],  [], [], []),
+  mkL(0,2, [[7,2]],  [], [], []),
+  mkL(7,3, [[1,3]],  [], [], []),
+  mkL(0,4, [[5,4]],  [], [], []),
+  mkL(2,2, [[6,2],[4,2]], [], [], []),
+  // 11-15: Merdiven var, 1 kat çıkış
+  mkL(0,0, [[4,1]],  [], [], [[3,0,1]]),
+  mkL(0,0, [[7,1]],  [], [], [[2,0,1]]),
+  mkL(0,0, [[3,2]],  [], [], [[2,0,1],[5,1,2]]),
+  mkL(7,0, [[0,1]],  [], [], [[6,0,1]]),
+  mkL(0,0, [[4,1],[4,0]], [], [], [[3,0,1]]),
+  // 16-20: Hafif engel + merdiven
+  mkL(0,0, [[6,1]],  [{c:3,fl:0}], [], [[2,0,1]]),
+  mkL(0,0, [[5,1]],  [], [{c:4,fl:0}], [[3,0,1]]),
+  mkL(0,0, [[7,2]],  [], [], [[2,0,1],[5,1,2]]),
+  mkL(0,0, [[4,1],[6,2]], [], [], [[3,0,1],[5,1,2]]),
+  mkL(7,0, [[0,2]],  [], [], [[6,0,1],[1,1,2]]),
+];
+
+// ─── ORTA BÖLÜMLER (20 adet) ───
+var MED = [];
+for(var mi=0; mi<20; mi++){
+  MED.push(mkL(0,0,
+    [[7,2],[3,4]],
+    [{c:2,fl:0},{c:5,fl:1}],
+    [{c:4,fl:0}],
+    [{c:3,fl:0,to:1},{c:5,fl:1,to:2},{c:2,fl:2,to:3},{c:6,fl:3,to:4}]
+  ));
+}
+
+// ─── ZOR BÖLÜMLER (20 adet) ───
+var HARD = [];
+for(var hi=0; hi<20; hi++){
+  HARD.push(mkL(0,0,
+    [[7,2],[3,4],[6,1]],
+    [{c:2,fl:0},{c:5,fl:1},{c:3,fl:2}],
+    [{c:4,fl:0},{c:2,fl:1}],
+    [{c:3,fl:0,to:1},{c:5,fl:1,to:2},{c:2,fl:2,to:3},{c:6,fl:3,to:4}]
+  ));
+}
+
+var LVLS = {easy:EASY, med:MED, hard:HARD};
+
+// ─── SES ───
+var _ctx = null;
+function getCtx(){ if(!_ctx)_ctx=new(window.AudioContext||window.webkitAudioContext)(); if(_ctx.state==='suspended')_ctx.resume(); return _ctx; }
+function tone(f,t,d,v,dl){ try{ var c=getCtx(),o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.type=t||'sine'; o.frequency.setValueAtTime(f,c.currentTime+(dl||0)); g.gain.setValueAtTime(v||.18,c.currentTime+(dl||0)); g.gain.exponentialRampToValueAtTime(.001,c.currentTime+(dl||0)+d); o.start(c.currentTime+(dl||0)); o.stop(c.currentTime+(dl||0)+d); }catch(e){} }
+function snd(t){
+  if(t==='walk'){ tone(300,'sine',.1,.12); tone(200,'sine',.07,.08,.09); }
+  else if(t==='jump'){ tone(400,'sine',.07,.15); tone(700,'sine',.1,.18,.07); tone(900,'sine',.08,.12,.16); }
+  else if(t==='eat'){ tone(660,'triangle',.1,.2); tone(880,'triangle',.12,.2,.1); tone(1100,'triangle',.18,.15,.22); }
+  else if(t==='win'){ [523,659,784,1047].forEach(function(f,i){ tone(f,'triangle',.3,.2,i*.13); }); }
+  else if(t==='spike'){ tone(180,'sawtooth',.12,.25); tone(100,'sawtooth',.18,.2,.1); }
+  else if(t==='sad'){ tone(400,'sine',.15,.18); tone(300,'sine',.2,.15,.15); tone(220,'sine',.25,.12,.32); }
+  else if(t==='ladder'){ tone(500,'sine',.07,.15); tone(700,'sine',.09,.15,.09); }
+}
+
+// ─── CANVAS ───
+var canvas, ctx2d;
+function initCanvas(){
+  canvas = document.getElementById('gc');
+  ctx2d = canvas.getContext('2d');
+  canvas.addEventListener('click', onCanvasClick);
+}
+
+// Kat 0 = en altta, Kat 4 = en üstte
+// Kat fl'nin Y koordinatı (üst kenar):
+function floorY(fl){ return (FLOORS - 1 - fl) * FLOOR_H; }
+// Hücre X:
+function cellX(c){ return c * CW; }
+// Pug'ın canvas üzerindeki Y merkezi (platform üstünde duruyor):
+function pugY(fl){ return floorY(fl) + FLOOR_H - PLAT_H - 18; }
+
+function drawGame(){
+  if(!ctx2d || !G.curLvl) return;
+  var l = G.curLvl;
+  var editOpen = document.getElementById('editTray').classList.contains('open');
+
+  // Her katın arka planını çiz
+  for(var fl=0; fl<FLOORS; fl++){
+    var fy = floorY(fl);
+    var fc = FLOOR_COLORS[fl];
+    // Arka plan
+    ctx2d.fillStyle = fc.bg;
+    ctx2d.fillRect(0, fy, CANVAS_W, FLOOR_H);
+    // Yıldız efekti
+    ctx2d.fillStyle = 'rgba(255,255,255,0.15)';
+    for(var si=0; si<6; si++){
+      var sx = ((fl*97+si*53)%CANVAS_W);
+      var sy = fy + ((fl*31+si*17)%( FLOOR_H - PLAT_H - 5));
+      ctx2d.fillRect(sx,sy,1,1);
+    }
+    // Platform
+    var py = fy + FLOOR_H - PLAT_H;
+    var grad = ctx2d.createLinearGradient(0,py,0,py+PLAT_H);
+    grad.addColorStop(0, fc.shine);
+    grad.addColorStop(0.4, fc.plat);
+    grad.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx2d.fillStyle = grad;
+    ctx2d.fillRect(0, py, CANVAS_W, PLAT_H);
+    // Platform üst çizgisi
+    ctx2d.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx2d.fillRect(0, py, CANVAS_W, 2);
+    // Platform dikey çizgiler
+    ctx2d.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx2d.lineWidth = 1;
+    for(var pc=0; pc<COLS; pc++){
+      ctx2d.beginPath();
+      ctx2d.moveTo(pc*CW, py+2);
+      ctx2d.lineTo(pc*CW, py+PLAT_H);
+      ctx2d.stroke();
+    }
+  }
+
+  // Grid çizgileri (hafif)
+  ctx2d.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx2d.lineWidth = 1;
+  for(var c=0; c<=COLS; c++){
+    ctx2d.beginPath(); ctx2d.moveTo(c*CW,0); ctx2d.lineTo(c*CW,CANVAS_H); ctx2d.stroke();
+  }
+
+  // Duvarlar
+  l.walls.forEach(function(w){
+    var wx = cellX(w.c);
+    var wy = floorY(w.fl);
+    ctx2d.fillStyle = '#555';
+    ctx2d.fillRect(wx+2, wy+2, CW-4, FLOOR_H-PLAT_H-2);
+    ctx2d.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx2d.lineWidth = 1;
+    for(var bi=0; bi<2; bi++){
+      ctx2d.strokeRect(wx+3, wy+3+bi*((FLOOR_H-PLAT_H)/2), CW-6, (FLOOR_H-PLAT_H)/2-2);
+    }
+  });
+
+  // Dikenler
+  l.spikes.forEach(function(s){
+    var sx = cellX(s.c);
+    var fy2 = floorY(s.fl);
+    var py2 = fy2 + FLOOR_H - PLAT_H;
+    ctx2d.fillStyle = '#ef4444';
+    for(var si2=0; si2<4; si2++){
+      var bx = sx + 3 + si2*9;
+      ctx2d.beginPath();
+      ctx2d.moveTo(bx, py2);
+      ctx2d.lineTo(bx+4, py2-12);
+      ctx2d.lineTo(bx+8, py2);
+      ctx2d.closePath();
+      ctx2d.fill();
+    }
+  });
+
+  // Merdivenler — iki kat arasında tam yükseklikte
+  l.ladders.forEach(function(ld){
+    var lx = cellX(ld.c);
+    var fromFl = Math.min(ld.fl, ld.to);
+    var toFl   = Math.max(ld.fl, ld.to);
+    var y1 = floorY(toFl);           // üst katın üst kenarı
+    var y2 = floorY(fromFl) + FLOOR_H - PLAT_H; // alt katın platform üstü
+    drawLadder(lx, y1, CW, y2 - y1);
+  });
+
+  // Kemikler
+  l.bones.forEach(function(b){
+    if(b.eaten) return;
+    drawBone(cellX(b.c) + CW/2, pugY(b.fl) - 8);
+  });
+
+  // Pug
+  var ap = G.animPug;
+  var px, py3;
+  if(ap.prog < 1){
+    px = ap.x + (ap.tx - ap.x) * ap.prog;
+    py3 = ap.y + (ap.ty - ap.y) * ap.prog;
+    if(ap.jumping){
+      var arc = Math.sin(ap.prog * Math.PI) * 18;
+      py3 -= arc;
+    }
+  } else {
+    px = G.pos.c * CW;
+    py3 = pugY(G.pos.fl);
+  }
+  drawPug(px + CW/2, py3, G.facing, ap.shaking, ap.shakeTick);
+
+  // Editör overlay
+  if(editOpen){
+    // Tüm canvas etrafı
+    ctx2d.strokeStyle = 'rgba(99,102,241,0.6)';
+    ctx2d.lineWidth = 3;
+    ctx2d.strokeRect(1,1,CANVAS_W-2,CANVAS_H-2);
+    // Başlangıç noktası highlight
+    var sp = G.curLvl.start;
+    var spx = cellX(sp.c);
+    var spy = floorY(sp.fl);
+    ctx2d.fillStyle = 'rgba(99,102,241,0.25)';
+    ctx2d.fillRect(spx+2, spy+2, CW-4, FLOOR_H-PLAT_H-4);
+    ctx2d.fillStyle = 'rgba(99,102,241,0.9)';
+    ctx2d.font = 'bold 9px sans-serif';
+    ctx2d.textAlign = 'center';
+    ctx2d.fillText('START', spx+CW/2, spy+FLOOR_H/2-PLAT_H/2);
+    // Kat etiketleri
+    for(var fl2=0; fl2<FLOORS; fl2++){
+      ctx2d.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx2d.font = 'bold 9px sans-serif';
+      ctx2d.textAlign = 'left';
+      ctx2d.fillText('Kat '+fl2, 3, floorY(fl2)+12);
+    }
+  }
+}
+
+function drawLadder(lx, ly, lw, lh){
+  var cx = lx + lw/2;
+  var r1x = cx - lw*0.15;
+  var r2x = cx + lw*0.15;
+  var railW = 4;
+  // Raylar
+  var rg = ctx2d.createLinearGradient(r1x,0,r1x+railW,0);
+  rg.addColorStop(0,'#8B6914'); rg.addColorStop(0.5,'#D4A017'); rg.addColorStop(1,'#8B6914');
+  ctx2d.fillStyle = rg;
+  ctx2d.fillRect(r1x, ly, railW, lh);
+  ctx2d.fillRect(r2x, ly, railW, lh);
+  // Basamaklar
+  for(var ry=ly+4; ry<ly+lh-4; ry+=10){
+    ctx2d.fillStyle = '#D4A017';
+    ctx2d.fillRect(r1x+railW, ry, r2x-r1x-railW, 3);
+    ctx2d.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx2d.fillRect(r1x+railW, ry, r2x-r1x-railW, 1);
+  }
+}
+
+function drawBone(cx, cy){
+  ctx2d.save();
+  ctx2d.translate(cx, cy);
+  ctx2d.shadowColor = '#fbbf24'; ctx2d.shadowBlur = 8;
+  ctx2d.fillStyle = '#f5f5f5';
+  ctx2d.fillRect(-10,-3,20,6);
+  [[-12,0],[12,0]].forEach(function(p){
+    ctx2d.beginPath(); ctx2d.arc(p[0],p[1],5,0,Math.PI*2); ctx2d.fill();
+    ctx2d.beginPath(); ctx2d.arc(p[0]-2,p[1]-2,2,0,Math.PI*2);
+    ctx2d.fillStyle='rgba(255,255,255,0.6)'; ctx2d.fill();
+    ctx2d.fillStyle='#f5f5f5';
+  });
+  ctx2d.shadowBlur=0; ctx2d.restore();
+}
+
+function drawPug(cx, cy, facing, shaking, shakeTick){
+  ctx2d.save();
+  ctx2d.translate(cx, cy);
+  if(shaking) ctx2d.translate(Math.sin(shakeTick*0.8)*5, 0);
+  ctx2d.scale(facing, 1);
+  var s = 0.52; ctx2d.scale(s,s);
+  // Gölge
+  ctx2d.fillStyle='rgba(0,0,0,0.3)';
+  ctx2d.beginPath(); ctx2d.ellipse(0,38,22,6,0,0,Math.PI*2); ctx2d.fill();
+  // Vücut
+  ctx2d.fillStyle='#c8a882';
+  ctx2d.beginPath(); ctx2d.ellipse(0,10,20,16,0,0,Math.PI*2); ctx2d.fill();
+  // Kafa
+  ctx2d.beginPath(); ctx2d.arc(0,-14,18,0,Math.PI*2); ctx2d.fill();
+  // Kulaklar
+  ctx2d.fillStyle='#a07850';
+  ctx2d.beginPath(); ctx2d.ellipse(-14,-26,7,9,Math.PI*0.15,0,Math.PI*2); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.ellipse(14,-26,7,9,-Math.PI*0.15,0,Math.PI*2); ctx2d.fill();
+  ctx2d.fillStyle='#c8a882';
+  ctx2d.beginPath(); ctx2d.ellipse(-14,-26,4,6,Math.PI*0.15,0,Math.PI*2); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.ellipse(14,-26,4,6,-Math.PI*0.15,0,Math.PI*2); ctx2d.fill();
+  // Burun
+  ctx2d.fillStyle='#8b6340';
+  ctx2d.beginPath(); ctx2d.ellipse(0,-8,11,8,0,0,Math.PI*2); ctx2d.fill();
+  // Gözler
+  ctx2d.fillStyle='white';
+  ctx2d.beginPath(); ctx2d.arc(-7,-16,5,0,Math.PI*2); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.arc(7,-16,5,0,Math.PI*2); ctx2d.fill();
+  ctx2d.fillStyle='#111';
+  ctx2d.beginPath(); ctx2d.arc(-6,-16,3,0,Math.PI*2); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.arc(8,-16,3,0,Math.PI*2); ctx2d.fill();
+  ctx2d.fillStyle='white';
+  ctx2d.beginPath(); ctx2d.arc(-5,-17,1,0,Math.PI*2); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.arc(9,-17,1,0,Math.PI*2); ctx2d.fill();
+  // Burun ucu
+  ctx2d.fillStyle='#5c3d1e';
+  ctx2d.beginPath(); ctx2d.ellipse(0,-9,4,3,0,0,Math.PI*2); ctx2d.fill();
+  ctx2d.fillStyle='rgba(255,255,255,0.3)';
+  ctx2d.beginPath(); ctx2d.arc(-1,-10,1.5,0,Math.PI*2); ctx2d.fill();
+  // Ağız
+  ctx2d.strokeStyle='#5c3d1e'; ctx2d.lineWidth=1.5;
+  ctx2d.beginPath(); ctx2d.moveTo(-4,-4); ctx2d.quadraticCurveTo(0,-1,4,-4); ctx2d.stroke();
+  // Dil
+  ctx2d.fillStyle='#f87171';
+  ctx2d.beginPath(); ctx2d.ellipse(0,0,4,3,0,0,Math.PI*2); ctx2d.fill();
+  // Kuyruk
+  ctx2d.strokeStyle='#a07850'; ctx2d.lineWidth=4; ctx2d.lineCap='round';
+  ctx2d.beginPath(); ctx2d.moveTo(-18,8); ctx2d.quadraticCurveTo(-30,-2,-22,-12); ctx2d.stroke();
+  // Bacaklar
+  ctx2d.fillStyle='#b8926a';
+  ctx2d.beginPath(); ctx2d.roundRect(-14,22,8,14,4); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.roundRect(6,22,8,14,4); ctx2d.fill();
+  ctx2d.fillStyle='#a07850';
+  ctx2d.beginPath(); ctx2d.roundRect(-18,20,8,16,4); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.roundRect(10,20,8,16,4); ctx2d.fill();
+  ctx2d.fillStyle='#8b6340';
+  ctx2d.beginPath(); ctx2d.ellipse(-10,36,5,3,0,0,Math.PI*2); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.ellipse(10,36,5,3,0,0,Math.PI*2); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.ellipse(-14,36,5,3,0,0,Math.PI*2); ctx2d.fill();
+  ctx2d.beginPath(); ctx2d.ellipse(14,36,5,3,0,0,Math.PI*2); ctx2d.fill();
+  ctx2d.restore();
+}
+
+// ─── ANİMASYON ───
+var animFrame = null;
+function startAnim(){
+  if(animFrame) cancelAnimationFrame(animFrame);
+  function loop(){
+    var ap = G.animPug;
+    if(ap.prog < 1) ap.prog = Math.min(1, ap.prog + 0.12);
+    if(ap.shaking){ ap.shakeTick++; if(ap.shakeTick>20){ap.shaking=false;ap.shakeTick=0;} }
+    drawGame();
+    animFrame = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+// ─── HARİTA ───
+function switchDiff(d){
+  G.curDiff = d;
+  ['easy','med','hard'].forEach(function(x){
+    document.getElementById('tab'+x.charAt(0).toUpperCase()+x.slice(1)).classList.remove('act');
+  });
+  document.getElementById('tab'+d.charAt(0).toUpperCase()+d.slice(1)).classList.add('act');
+  drawMap();
+}
+function goMap(){
+  if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}
+  document.getElementById('sMap').classList.add('on');
+  document.getElementById('sPlay').classList.remove('on');
+  drawMap();
+}
+function drawMap(){
+  var g = document.getElementById('lvlGrid'); g.innerHTML='';
+  var maxOpen = G.unlocked[G.curDiff]||1;
+  for(var i=0; i<20; i++){
+    (function(idx){
+      var d = document.createElement('div');
+      var isOpen = (idx+1) <= maxOpen;
+      var isDone = G.done[G.curDiff].indexOf(idx+1) >= 0;
+      d.className = 'lc'+(isOpen?' open':'')+(isDone?' done':'');
+      d.innerText = idx+1;
+      if(isOpen) d.onclick = function(){ startLvl(idx, G.curDiff); };
+      g.appendChild(d);
+    })(i);
+  }
+  var tot = G.done.easy.length + G.done.med.length + G.done.hard.length;
+  document.getElementById('scoreDisp').innerText = '🦴 '+tot;
+}
+
+// ─── BÖLÜM BAŞLAT ───
+function startLvl(idx, diff){
+  G.cur = idx; G.curDiff = diff||'easy';
+  var src = LVLS[G.curDiff][idx];
+  G.curLvl = {
+    start: {c:src.start.c, fl:src.start.fl},
+    bones: src.bones.map(function(b){ return {c:b.c, fl:b.fl, eaten:false}; }),
+    walls: src.walls.slice(),
+    spikes: src.spikes.slice(),
+    ladders: src.ladders.slice()
+  };
+  G.pos = {c:G.curLvl.start.c, fl:G.curLvl.start.fl};
+  G.facing = 1; G.cmds = []; G.running = false;
+  var startPX = G.pos.c * CW;
+  var startPY = pugY(G.pos.fl);
+  G.animPug = {x:startPX, y:startPY, tx:startPX, ty:startPY, prog:1, jumping:false, shaking:false, shakeTick:0};
+  var EMOJIS = { easy: '🙂', med: '😄', hard: '😃' };
+  var em = EMOJIS[G.curDiff] || '🙂';
+  document.getElementById('lvlLabel').innerText = em+' Bölüm '+(idx+1);
+  document.getElementById('dropZone').innerHTML = '';
+  document.getElementById('cntBadge').innerText = '0';
+  document.getElementById('winModal').classList.remove('show');
+  document.getElementById('failModal').classList.remove('show');
+  document.getElementById('editTray').classList.remove('open');
+  document.getElementById('pwOv').classList.remove('show');
+  document.getElementById('sMap').classList.remove('on');
+  document.getElementById('sPlay').classList.add('on');
+  updateBoneCount();
+  startAnim();
+}
+
+function updateBoneCount(){
+  if(!G.curLvl) return;
+  var total = G.curLvl.bones.length;
+  var eaten = G.curLvl.bones.filter(function(b){ return b.eaten; }).length;
+  document.getElementById('boneCount').innerText = '🦴 '+eaten+'/'+total;
+}
+
+// ─── CANVAS TIKLAMA (EDİTÖR) ───
+function onCanvasClick(e){
+  if(!document.getElementById('editTray').classList.contains('open')) return;
+  var rect = canvas.getBoundingClientRect();
+  var mx = (e.clientX - rect.left) * (CANVAS_W / rect.width);
+  var my = (e.clientY - rect.top) * (CANVAS_H / rect.height);
+  var c = Math.floor(mx / CW);
+  // Hangi kat? floorY(fl) = (FLOORS-1-fl)*FLOOR_H
+  // fl = FLOORS-1 - Math.floor(my/FLOOR_H)
+  var fl = FLOORS - 1 - Math.floor(my / FLOOR_H);
+  if(c<0||c>=COLS||fl<0||fl>=FLOORS) return;
+  onSqClick(fl, c);
+}
+
+// ─── CHİPLER ───
+var CMAP = {L:'cL',R:'cR',U:'cU',D:'cD',J:'cJ'};
+var CICO = {L:'←',R:'→',U:'⬆',D:'⬇',J:'🦘'};
+function addCmd(c){ if(G.running||G.cmds.length>=20) return; G.cmds.push(c); renderChips(-1); }
+function renderChips(ai){
+  var z = document.getElementById('dropZone'); z.innerHTML='';
+  G.cmds.forEach(function(c,i){
+    var ch = document.createElement('div');
+    ch.className = 'chip '+CMAP[c];
+    if(i===ai) ch.classList.add('act');
+    else if(ai>=0&&i<ai) ch.classList.add('done');
+    ch.innerText = CICO[c];
+    ch.onclick = (function(idx){ return function(){ if(!G.running){G.cmds.splice(idx,1);renderChips(-1);} }; })(i);
+    z.appendChild(ch);
+  });
+  document.getElementById('cntBadge').innerText = G.cmds.length;
+}
+
+// ─── FAIL/WIN ───
+function showFail(title, msg){
+  G.animPug.shaking=true; G.animPug.shakeTick=0;
+  document.getElementById('failTitle').innerText = title;
+  document.getElementById('failMsg').innerText = msg;
+  document.getElementById('failModal').classList.add('show');
+}
+function retryLvl(){ document.getElementById('failModal').classList.remove('show'); startLvl(G.cur, G.curDiff); }
+function goNext(){ document.getElementById('winModal').classList.remove('show'); if(G.cur<19) startLvl(G.cur+1,G.curDiff); else goMap(); }
+
+// ─── KODU ÇALIŞTIR ───
+async function runCode(){
+  if(G.running || !G.cmds.length) return;
+  try{ getCtx(); }catch(e){}
+  G.running = true;
+  var l = G.curLvl;
+
+  for(var i=0; i<G.cmds.length; i++){
+    renderChips(i);
+    var cmd = G.cmds[i];
+    var nc = G.pos.c, nfl = G.pos.fl;
+
+    if(cmd==='L'){ nc--; G.facing=-1; }
+    else if(cmd==='R'){ nc++; G.facing=1; }
+    else if(cmd==='J'){
+      if(G.facing===1) nc+=2; else nc-=2;
+      G.animPug.jumping=true;
+      snd('jump');
+    }
+    else if(cmd==='U'){
+      // Merdiven var mı bu konumda?
+      var lad = null;
+      for(var j=0;j<l.ladders.length;j++){
+        if(l.ladders[j].c===G.pos.c && l.ladders[j].fl===G.pos.fl){
+          lad=l.ladders[j]; break;
+        }
+      }
+      if(!lad){ G.running=false; renderChips(-1); snd('sad'); setTimeout(function(){showFail('MERDIVEN YOK! 🪜','Burada merdiven yok!');},200); return; }
+      nfl = lad.to; snd('ladder');
+    }
+    else if(cmd==='D'){
+      // Aşağı merdiven: bu konumda "to" olarak işaret eden merdiven
+      var lad2 = null;
+      for(var j=0;j<l.ladders.length;j++){
+        if(l.ladders[j].c===G.pos.c && l.ladders[j].to===G.pos.fl){
+          lad2=l.ladders[j]; break;
+        }
+      }
+      if(!lad2){ G.running=false; renderChips(-1); snd('sad'); setTimeout(function(){showFail('MERDIVEN YOK! 🪜','Aşağı merdiven yok!');},200); return; }
+      nfl = lad2.fl; snd('ladder');
+    }
+
+    // Sınır kontrolü
+    if(nc<0||nc>=COLS){ G.running=false; renderChips(-1); snd('sad'); setTimeout(function(){showFail('SINIR DIŞI! 🚧','Haritanın dışına çıktın!');},200); return; }
+    // Duvar kontrolü
+    if(l.walls.some(function(w){ return w.c===nc&&w.fl===nfl; })){ G.running=false; renderChips(-1); snd('sad'); setTimeout(function(){showFail('DUVAR! 🧱','Duvara çarptın!');},200); return; }
+    // Diken kontrolü
+    if(l.spikes.some(function(s){ return s.c===nc&&s.fl===nfl; })){ G.running=false; renderChips(-1); snd('spike'); setTimeout(function(){showFail('AY! 🌵','Dikene bastın!');},200); return; }
+
+    // Animasyon
+    G.animPug.x = G.pos.c * CW;
+    G.animPug.y = pugY(G.pos.fl);
+    G.animPug.tx = nc * CW;
+    G.animPug.ty = pugY(nfl);
+    G.animPug.prog = 0;
+    G.pos = {c:nc, fl:nfl};
+    if(cmd!=='U'&&cmd!=='D') snd('walk');
+
+    // Kemik kontrolü
+    for(var j=0;j<l.bones.length;j++){
+      if(!l.bones[j].eaten && l.bones[j].c===nc && l.bones[j].fl===nfl){
+        l.bones[j].eaten=true; snd('eat'); updateBoneCount(); break;
+      }
+    }
+
+    await new Promise(function(res){ setTimeout(res, 480); });
+    G.animPug.jumping = false;
+  }
+
+  renderChips(-1);
+  if(l.bones.every(function(b){ return b.eaten; })){
+    if(G.done[G.curDiff].indexOf(G.cur+1)<0) G.done[G.curDiff].push(G.cur+1);
+    if(G.unlocked[G.curDiff]===(G.cur+1)) G.unlocked[G.curDiff]++;
+    snd('win'); document.getElementById('winModal').classList.add('show');
+  } else {
+    snd('sad'); showFail('OLMADI! 😢','Bazı kemikler hâlâ orada!');
+  }
+  G.running = false;
+}
+
+// ─── EDİTÖR ───
+function toggleEdit(){
+  var t = document.getElementById('editTray');
+  if(t.classList.contains('open')){ t.classList.remove('open'); drawGame(); return; }
+  if(G.editorUnlocked){ t.classList.add('open'); drawGame(); return; }
+  document.getElementById('pwOv').classList.add('show');
+  document.getElementById('pwInput').value='';
+  document.getElementById('pwErr').style.display='none';
+  setTimeout(function(){ document.getElementById('pwInput').focus(); },100);
+}
+function checkPw(){
+  if(document.getElementById('pwInput').value==='sifigu'){
+    G.editorUnlocked=true;
+    document.getElementById('pwOv').classList.remove('show');
+    document.getElementById('editTray').classList.add('open');
+    drawGame();
+  } else {
+    document.getElementById('pwErr').style.display='block';
+    document.getElementById('pwInput').value='';
+  }
+}
+function closePw(){ document.getElementById('pwOv').classList.remove('show'); }
+
+function selTool(t){
+  G.tool = t;
+  ['P','B','W','S','L','X'].forEach(function(x){ document.getElementById('t'+x).classList.remove('sel'); });
+  document.getElementById('t'+t).classList.add('sel');
+  var lt = document.getElementById('ladTarget');
+  if(t==='L'){ lt.classList.add('show'); buildLadBtns(); }
+  else lt.classList.remove('show');
+}
+
+function buildLadBtns(){
+  var div = document.getElementById('ladBtns'); div.innerHTML='';
+  for(var fl=0; fl<FLOORS; fl++){
+    (function(f){
+      var b = document.createElement('button');
+      b.className = 'lad-btn'+(f===G.ladTo?' sel':'');
+      b.innerText = 'Kat '+f;
+      b.onclick = function(){ G.ladTo=f; buildLadBtns(); };
+      div.appendChild(b);
+    })(fl);
+  }
+}
+
+function onSqClick(fl, c){
+  var l = G.curLvl;
+  if(G.tool==='P'){
+    l.start={c:c,fl:fl};
+    G.pos={c:c,fl:fl};
+    G.animPug.x=c*CW; G.animPug.y=pugY(fl);
+    G.animPug.tx=c*CW; G.animPug.ty=pugY(fl);
+    G.animPug.prog=1;
+  }
+  else if(G.tool==='B'){
+    if(!l.bones.some(function(b){ return b.c===c&&b.fl===fl; }))
+      l.bones.push({c:c,fl:fl,eaten:false});
+  }
+  else if(G.tool==='W'){
+    if(!l.walls.some(function(w){ return w.c===c&&w.fl===fl; }))
+      l.walls.push({c:c,fl:fl});
+  }
+  else if(G.tool==='S'){
+    if(!l.spikes.some(function(s){ return s.c===c&&s.fl===fl; }))
+      l.spikes.push({c:c,fl:fl});
+  }
+  else if(G.tool==='L'){
+    var fromFl=fl, toFl=G.ladTo;
+    if(fromFl===toFl) return;
+    if(!l.ladders.some(function(ld){ return ld.c===c&&ld.fl===fromFl; }))
+      l.ladders.push({c:c,fl:fromFl,to:toFl});
+  }
+  else if(G.tool==='X'){
+    l.bones   = l.bones.filter(function(b){ return !(b.c===c&&b.fl===fl); });
+    l.walls   = l.walls.filter(function(w){ return !(w.c===c&&w.fl===fl); });
+    l.spikes  = l.spikes.filter(function(s){ return !(s.c===c&&s.fl===fl); });
+    l.ladders = l.ladders.filter(function(ld){ return !(ld.c===c&&(ld.fl===fl||ld.to===fl)); });
+  }
+  drawGame();
+}
+
+// ─── BAŞLAT ───
+window.addEventListener('load', function(){
+  initCanvas();
+  drawMap();
+});
+</script>
+</body>
+</html>
